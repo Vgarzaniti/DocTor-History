@@ -1,99 +1,152 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, Date
-from sqlalchemy.orm import relationship, DeclarativeBase
+from typing import List
+
+from sqlalchemy import Boolean, Date, ForeignKeyConstraint, Integer, PrimaryKeyConstraint, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+import datetime
 
 class Base(DeclarativeBase):
     pass
 
-class ObraSocial(Base):
-    __tablename__ = 'obraSocial'
-    id = Column(Integer, primary_key=True)
-    nombre = Column(String(100), nullable=False)
-
-    pacientes = relationship('Paciente', back_populates='obraSocial')
-    pacientesXObraSocial = relationship('PacienteXObraSocial', back_populates='obraSocial')
-
-class Dbt(Base):
-    __tablename__ = 'dbt'
-    id = Column(Integer, primary_key=True)
-    tipo = Column(Integer, nullable=False)
-
-    antecedentes = relationship('Antecedentes', back_populates='dbt')
 
 class Cardiologico(Base):
     __tablename__ = 'cardiologico'
-    id = Column(Integer, primary_key=True)
-    arritmia = Column(Boolean, nullable=False)
-    iam = Column(Boolean, nullable=False)
-    marcapaso = Column(Boolean, nullable=False)
-    stent = Column(Boolean, nullable=False)
-    otro = Column(Text, nullable=True)  # Puede ser None si no tiene otro problema
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='cardiologico_pkey'),
+    )
 
-    antecedentes = relationship('Antecedentes', back_populates='cardiologico')
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    arritmia: Mapped[bool] = mapped_column(Boolean)
+    iam: Mapped[bool] = mapped_column(Boolean)
+    marcapaso: Mapped[bool] = mapped_column(Boolean)
+    stent: Mapped[bool] = mapped_column(Boolean)
+    otro: Mapped[str] = mapped_column(Text)
 
-class Antecedentes(Base):
-    __tablename__ = 'antecedentes'
-    id = Column(Integer, primary_key=True)
-    hta = Column(Boolean, nullable=False)
-    idDbt = Column(Integer, ForeignKey('dbt.id'), nullable=True)
-    dislipemia = Column(Boolean, nullable=False)
-    hipotiroidismo = Column(Boolean, nullable=False)
-    oncologico = Column(Text, nullable=True)
-    cirugia = Column(Text, nullable=True)
-    otros = Column(Text, nullable=True)
-    idCardiologico = Column(Integer, ForeignKey('cardiologico.id'), nullable=True)
+    antecedentes: Mapped[List['Antecedentes']] = relationship('Antecedentes', back_populates='cardiologico')
 
-    dbt = relationship('Dbt', back_populates='antecedentes')
-    cardiologico = relationship('Cardiologico', back_populates='antecedentes')
-    paciente = relationship('Paciente', back_populates='antecedentes', uselist=False)
 
-class Paciente(Base):
-    __tablename__ = 'paciente'
-    id = Column(Integer, primary_key=True)
-    nombre = Column(String(100), nullable=False)
-    apellido = Column(String(100), nullable=False)
-    edad = Column(Integer, nullable=False)
-    idObraSocial = Column(Integer, ForeignKey('obraSocial.id'), nullable=False)
-    idAntecedentes = Column(Integer, ForeignKey('antecedentes.id'), nullable=False)
+class Dbt(Base):
+    __tablename__ = 'dbt'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='dbt_pkey'),
+    )
 
-    obraSocial = relationship('ObraSocial', back_populates='pacientes')
-    antecedentes = relationship('Antecedentes', back_populates='paciente', uselist=False)
-    consultas = relationship('Consulta', back_populates='paciente')
-    pacientesXObraSocial = relationship('PacienteXObraSocial', back_populates='paciente')
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tipo: Mapped[int] = mapped_column(Integer)
 
-class Consulta(Base):
-    __tablename__ = 'consulta'
-    id = Column(Integer, primary_key=True)
-    fecha = Column(Date, nullable=False)
-    descripcion = Column(Text, nullable=False)
-    idPaciente = Column(Integer, ForeignKey('paciente.id'), nullable=False)
+    antecedentes: Mapped[List['Antecedentes']] = relationship('Antecedentes', back_populates='dbt')
 
-    paciente = relationship('Paciente', back_populates='consultas')
-    extras = relationship('ConsultaXExtra', back_populates='consulta')
 
 class Extra(Base):
     __tablename__ = 'extra'
-    id = Column(Integer, primary_key=True)
-    nombreFarmaco = Column(Text, nullable=False)
-    laboratorio = Column(Text, nullable=False)
-    estudios = Column(Text, nullable=True)  # Puede no tener estudios asociados
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='extra_pkey'),
+    )
 
-    consultas = relationship('ConsultaXExtra', back_populates='extra')
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nombrefarmaco: Mapped[str] = mapped_column(Text)
+    laboratorio: Mapped[str] = mapped_column(Text)
+    estudios: Mapped[str] = mapped_column(Text)
 
-class ConsultaXExtra(Base):
-    __tablename__ = 'consultaXextra'
-    id = Column(Integer, primary_key=True)
-    idconsulta = Column(Integer, ForeignKey('consulta.id'), nullable=False)
-    idextra = Column(Integer, ForeignKey('extra.id'), nullable=False)
+    consultaxextra: Mapped[List['Consultaxextra']] = relationship('Consultaxextra', back_populates='extra')
 
-    consulta = relationship('Consulta', back_populates='extras')
-    extra = relationship('Extra', back_populates='consultas')
 
-class PacienteXObraSocial(Base):
-    __tablename__ = 'pacienteXobraSocial'
-    id = Column(Integer, primary_key=True)
-    numeroObraSocial = Column(String(50), nullable=False)  # Puede ser alfanumérico
-    idpaciente = Column(Integer, ForeignKey('paciente.id'), nullable=False)
-    idobraSocial = Column(Integer, ForeignKey('obraSocial.id'), nullable=False)
+class Obrasocial(Base):
+    __tablename__ = 'obrasocial'
+    __table_args__ = (
+        PrimaryKeyConstraint('id', name='obrasocial_pkey'),
+    )
 
-    paciente = relationship('Paciente', back_populates='pacientesXObraSocial')
-    obraSocial = relationship('ObraSocial', back_populates='pacientesXObraSocial')
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(100))
+
+    pacientexobrasocial: Mapped[List['Pacientexobrasocial']] = relationship('Pacientexobrasocial', back_populates='obrasocial')
+
+
+class Antecedentes(Base):
+    __tablename__ = 'antecedentes'
+    __table_args__ = (
+        ForeignKeyConstraint(['idcardiologico'], ['cardiologico.id'], ondelete='SET NULL', name='fk_antecedentes_cardiologico'),
+        ForeignKeyConstraint(['iddbt'], ['dbt.id'], ondelete='SET NULL', name='fk_antecedentes_dbt'),
+        PrimaryKeyConstraint('id', name='antecedentes_pkey')
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    hta: Mapped[bool] = mapped_column(Boolean)
+    iddbt: Mapped[int] = mapped_column(Integer)
+    dislipemia: Mapped[bool] = mapped_column(Boolean)
+    hipotiroidismo: Mapped[bool] = mapped_column(Boolean)
+    oncologico: Mapped[str] = mapped_column(Text)
+    cirugia: Mapped[str] = mapped_column(Text)
+    otros: Mapped[str] = mapped_column(Text)
+    idcardiologico: Mapped[int] = mapped_column(Integer)
+
+    cardiologico: Mapped['Cardiologico'] = relationship('Cardiologico', back_populates='antecedentes')
+    dbt: Mapped['Dbt'] = relationship('Dbt', back_populates='antecedentes')
+    paciente: Mapped[List['Paciente']] = relationship('Paciente', back_populates='antecedentes')
+
+
+class Paciente(Base):
+    __tablename__ = 'paciente'
+    __table_args__ = (
+        ForeignKeyConstraint(['idantecedentes'], ['antecedentes.id'], ondelete='SET NULL', name='fk_paciente_antecedentes'),
+        PrimaryKeyConstraint('id', name='paciente_pkey')
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(100))
+    apellido: Mapped[str] = mapped_column(String(100))
+    edad: Mapped[int] = mapped_column(Integer)
+    idantecedentes: Mapped[int] = mapped_column(Integer)
+
+    antecedentes: Mapped['Antecedentes'] = relationship('Antecedentes', back_populates='paciente')
+    consulta: Mapped[List['Consulta']] = relationship('Consulta', back_populates='paciente')
+    pacientexobrasocial: Mapped[List['Pacientexobrasocial']] = relationship('Pacientexobrasocial', back_populates='paciente')
+
+
+class Consulta(Base):
+    __tablename__ = 'consulta'
+    __table_args__ = (
+        ForeignKeyConstraint(['idpaciente'], ['paciente.id'], ondelete='SET NULL', name='fk_consulta_paciente'),
+        PrimaryKeyConstraint('id', name='consulta_pkey')
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    fecha: Mapped[datetime.date] = mapped_column(Date)
+    descripcion: Mapped[str] = mapped_column(Text)
+    idpaciente: Mapped[int] = mapped_column(Integer)
+
+    paciente: Mapped['Paciente'] = relationship('Paciente', back_populates='consulta')
+    consultaxextra: Mapped[List['Consultaxextra']] = relationship('Consultaxextra', back_populates='consulta')
+
+
+class Pacientexobrasocial(Base):
+    __tablename__ = 'pacientexobrasocial'
+    __table_args__ = (
+        ForeignKeyConstraint(['idobrasocial'], ['obrasocial.id'], name='pacientexobrasocial_idobrasocial_fkey'),
+        ForeignKeyConstraint(['idpaciente'], ['paciente.id'], name='pacientexobrasocial_idpaciente_fkey'),
+        PrimaryKeyConstraint('id', name='pacientexobrasocial_pkey')
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    numeroobrasocial: Mapped[int] = mapped_column(Integer)
+    idpaciente: Mapped[int] = mapped_column(Integer)
+    idobrasocial: Mapped[int] = mapped_column(Integer)
+
+    obrasocial: Mapped['Obrasocial'] = relationship('Obrasocial', back_populates='pacientexobrasocial')
+    paciente: Mapped['Paciente'] = relationship('Paciente', back_populates='pacientexobrasocial')
+
+
+class Consultaxextra(Base):
+    __tablename__ = 'consultaxextra'
+    __table_args__ = (
+        ForeignKeyConstraint(['idconsulta'], ['consulta.id'], name='consultaxextra_idconsulta_fkey'),
+        ForeignKeyConstraint(['idextra'], ['extra.id'], name='consultaxextra_idextra_fkey'),
+        PrimaryKeyConstraint('id', name='consultaxextra_pkey')
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idconsulta: Mapped[int] = mapped_column(Integer)
+    idextra: Mapped[int] = mapped_column(Integer)
+
+    consulta: Mapped['Consulta'] = relationship('Consulta', back_populates='consultaxextra')
+    extra: Mapped['Extra'] = relationship('Extra', back_populates='consultaxextra')

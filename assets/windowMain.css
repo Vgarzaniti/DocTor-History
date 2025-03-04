@@ -1,0 +1,10 @@
+#header {
+    background-color: #007bff;  /* Azul */
+    color: white;               /* Texto en blanco */
+    font-size: 20px;
+    font-weight: bold;
+    padding: 10px;
+    text-align: center;
+    width: 100%;
+    top:0;
+}
